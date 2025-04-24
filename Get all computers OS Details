@@ -1,0 +1,33 @@
+
+# Get all computer objects from Active Directory
+$Computers = Get-ADComputer -Filter * | Select-Object -ExpandProperty Name
+$Results = @()
+
+foreach ($Computer in $Computers) {
+    Write-Host "Getting OS details for $($Computer)..."
+    $OSInfo = Invoke-Command -ComputerName $Computer -ScriptBlock {
+        Get-ComputerInfo -Property PSComputerName, OsName, OsVersion, OsArchitecture, WindowsVersion, OsBuildNumber
+    } -ErrorAction SilentlyContinue # Ignore errors if a computer is offline or unreachable
+
+    if ($OSInfo) {
+        $Results += $OSInfo
+    } else {
+        $Results += [PSCustomObject]@{
+            PSComputerName = $Computer
+            OsName         = "Not Reachable"
+            OsVersion      = ""
+            OsArchitecture = ""
+            WindowsVersion = ""
+            OsBuildNumber  = ""
+        }
+    }
+}
+
+# Display the results in the console
+Write-Host "--- OS Details of Domain Computers ---"
+$Results | Format-Table
+
+# Export the results to a CSV file (optional)
+$ExportPath = "C:\Wallpaper\DomainOSDetails_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+$Results | Export-Csv -Path $ExportPath -NoTypeInformation
+Write-Host "OS details have been exported to: $ExportPath"
