@@ -1,0 +1,21 @@
+$Computers = Get-ADComputer -Filter * | Select-Object -ExpandProperty Name
+$Results = @()
+
+foreach ($Computer in $Computers) {
+    $PingResult = Test-Connection -ComputerName $Computer -Count 1 -Quiet
+    if ($PingResult) {
+        $IPAddress = (Test-Connection -ComputerName $Computer -Count 1).IPV4Address.IPAddressToString
+        $Results += [PSCustomObject]@{
+            ComputerName = $Computer
+            IPAddress    = $IPAddress
+        }
+    } else {
+        $Results += [PSCustomObject]@{
+            ComputerName = $Computer
+            IPAddress    = "Not Reachable"
+        }
+    }
+}
+
+$Results | Export-Csv -Path "C:\Wallpaper\ComputerIPs.csv" -NoTypeInformation
+Write-Host "Results have been exported to C:\Wallpaper\ComputerIPs.csv"
